@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { STATUSES } from '../data/jobs.js';
+import { supabase } from '../lib/supabase.js';
+import { STATUSES, STARTING_JOBS } from '../data/jobs.js';
 
-// jobs and setJobs now come from App as props
-function Jobs({ jobs, setJobs }) {
+// jobs and setJobs come from App; loading is true while App fetches them
+function Jobs({ jobs, setJobs, loading }) {
   // ===== ZONE 1: state (only the form and search are kept here) =====
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -18,37 +19,36 @@ function Jobs({ jobs, setJobs }) {
     return text.includes(search.toLowerCase());
   });
 
-  function changeStatus(id, newStatus) {
-    setJobs(
-      jobs.map((job) =>
-        job.id === id ? { ...job, status: newStatus } : job
-      )
-    );
+  // Each function: 1) save in the database  2) if it worked, update the screen
+  async function changeStatus(id, newStatus) {
+    const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', id);
+    if (error) return alert('Could not save: ' + error.message);
+
+    setJobs((prev) => prev.map((job) => (job.id === id ? { ...job, status: newStatus } : job)));
   }
 
-  function deleteJob(id) {
+  async function deleteJob(id) {
     if (!confirm('Delete this job?')) return;
-    setJobs(jobs.filter((job) => job.id !== id));
+
+    const { error } = await supabase.from('jobs').delete().eq('id', id);
+    if (error) return alert('Could not delete: ' + error.message);
+
+    setJobs((prev) => prev.filter((job) => job.id !== id));
   }
 
-  function addJob(e) {
+  async function addJob(e) {
     e.preventDefault(); // stops the page from reloading
-
     if (title === '' || company === '') return; // don't add empty jobs
 
-    const newJob = {
-      id: Date.now(),
-      title: title,
-      company: company,
-      location: location,
-      duration: '',
-      compensation: '',
-      description: '',
-      apply: apply,
-      status: 'To apply',
-    };
+    // insert = add a row; .select().single() = send me back the saved row
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert({ title, company, location, apply })
+      .select()
+      .single();
+    if (error) return alert('Could not add: ' + error.message);
 
-    setJobs([newJob, ...jobs]);
+    setJobs((prev) => [data, ...prev]);
 
     // clear the form
     setTitle('');
@@ -57,13 +57,33 @@ function Jobs({ jobs, setJobs }) {
     setApply('');
   }
 
+  // One-time button: copy the 5 jobs from data/jobs.js into the database
+  async function importStartingJobs() {
+    const rows = STARTING_JOBS.map(({ id, ...rest }) => rest); // drop the old id
+    const { data, error } = await supabase.from('jobs').insert(rows).select();
+    if (error) return alert('Could not import: ' + error.message);
+
+    setJobs((prev) => [...data, ...prev]);
+  }
+
   // ===== ZONE 3: what you see =====
+  if (loading) return <p className="loading">Loading your jobs…</p>;
+
   return (
     <section>
       <h1>My Jobs</h1>
       <p>
         You have {jobs.length} jobs saved · {toApplyCount} still to apply
       </p>
+
+      {jobs.length === 0 && (
+        <div className="panel">
+          <p>Your job list is empty.</p>
+          <button className="link-btn" onClick={importStartingJobs}>
+            + Add my 5 starting jobs
+          </button>
+        </div>
+      )}
 
       <input
         className="search"
@@ -114,7 +134,7 @@ function Jobs({ jobs, setJobs }) {
           </div>
         ))}
 
-        {visibleJobs.length === 0 && <p>No jobs match your search.</p>}
+        {jobs.length > 0 && visibleJobs.length === 0 && <p>No jobs match your search.</p>}
       </div>
     </section>
   );
