@@ -67,7 +67,7 @@ function NoteCard({ note, onSave, onDelete, onTogglePin }) {
       <p className="note-text">{note.text}</p>
 
       <div className="note-footer">
-        <span className="note-date">{formatDate(note.createdAt)}</span>
+       <span className="note-date">{formatDate(note.created_at)}</span>
         <button onClick={startEditing}>Edit</button>
         <button className="delete-btn" onClick={() => onDelete(note.id)}>Delete</button>
       </div>
