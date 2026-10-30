@@ -78,7 +78,7 @@ function App() {
       <main className="main">
         {page === 'dashboard' && <Dashboard jobs={jobs} setPage={setPage} />}
         {page === 'jobs' && <Jobs jobs={jobs} setJobs={setJobs} loading={jobsLoading} />}
-        {page === 'cv' && <CV />}
+       {page === 'cv' && <CV userId={session.user.id} />}
         {page === 'notes' && <Notes />}
       </main>
     </div>

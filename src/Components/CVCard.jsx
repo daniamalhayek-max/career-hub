@@ -1,5 +1,5 @@
 function formatSize(bytes) {
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
   return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
 
@@ -13,7 +13,7 @@ function formatDate(iso) {
 
 // Shows ONE CV and its versions. It doesn't change anything itself:
 // it calls the functions it receives from CV.jsx (the "on..." props).
-function CVCard({ cv, viewingId, onRename, onDelete, onAddVersion, onDeleteVersion, onView, onDownload }) {
+function CVCard({ cv, busy, viewingId, onRename, onRenameDone, onDelete, onAddVersion, onDeleteVersion, onView, onDownload }) {
   function handleNewVersion(e) {
     const file = e.target.files[0];
     if (file) onAddVersion(cv.id, file);
@@ -27,6 +27,7 @@ function CVCard({ cv, viewingId, onRename, onDelete, onAddVersion, onDeleteVersi
           className="cv-name"
           value={cv.name}
           onChange={(e) => onRename(cv.id, e.target.value)}
+          onBlur={() => onRenameDone(cv.id)}
           title="Click to rename"
         />
         <button className="delete-btn" onClick={() => onDelete(cv.id)}>
@@ -34,9 +35,9 @@ function CVCard({ cv, viewingId, onRename, onDelete, onAddVersion, onDeleteVersi
         </button>
       </div>
 
-      <label className="upload-btn">
-        + Upload new version
-        <input type="file" accept=".pdf,.doc,.docx" hidden onChange={handleNewVersion} />
+      <label className={busy ? 'upload-btn disabled' : 'upload-btn'}>
+        {busy ? 'Uploading…' : '+ Upload new version'}
+        <input type="file" accept=".pdf,.doc,.docx" hidden disabled={busy} onChange={handleNewVersion} />
       </label>
 
       <ul className="version-list">
@@ -46,7 +47,7 @@ function CVCard({ cv, viewingId, onRename, onDelete, onAddVersion, onDeleteVersi
               <strong>Version {version.number}</strong>
               {index === 0 && <span className="badge">Current</span>}
               <p className="version-meta">
-                {version.fileName} · {formatSize(version.size)} · {formatDate(version.uploadedAt)}
+                {version.file_name} · {formatSize(version.size)} · {formatDate(version.uploaded_at)}
               </p>
             </div>
             <div className="version-actions">

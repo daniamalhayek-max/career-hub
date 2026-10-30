@@ -633,3 +633,9 @@ body {
   .viewer { position: static; }
   .viewer iframe { height: 70vh; }
 }
+/* ===== CV page: online version ===== */
+.upload-btn.disabled { opacity: 0.6; cursor: wait; }
+.cv-card-head .delete-btn { white-space: nowrap; } /* keeps "Delete CV" on one line */
+
+.viewer-links { display: flex; align-items: center; gap: 14px; }
+.viewer-links a { color: #2f5d50; font-weight: 600; font-size: 14px; text-decoration: none; }
